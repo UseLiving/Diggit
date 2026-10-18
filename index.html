@@ -1,0 +1,544 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<link rel="icon" type="image/svg+xml" href="assets/diggits-logo.svg">
+<style>body{margin:0}</style>
+</head>
+<body>
+<title>Diggits</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@500;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+/* Layout: underground pixel mine. Hero headline → mine cross-section canvas (one crew per holder) → stats → my crew → how → tiers → calculator → deepest crews → transparency → token */
+:root{
+  --bg:#17120E; --rock:#211A15; --panel:#241C16; --line:#3A2E25; --fg:#F3E9DC; --muted:#B4A493; --dim:#7C6B5C;
+  --btc:#F7931A; --lamp:#FFE27A; --gem:#8FF0FF; --ok:#8BE38B;
+  --pix:"Pixelify Sans","Courier New",monospace; --mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{background:var(--bg);background-image:radial-gradient(rgba(255,226,122,.035) 1px,transparent 1.2px);background-size:14px 14px;color:var(--fg);font-family:var(--mono);font-size:15px;line-height:1.6;overflow-x:hidden}
+.wrap{max-width:1180px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+h1,h2,h3{font-family:var(--pix);font-weight:700;margin:0;line-height:1.02;text-wrap:balance}
+.lab{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.btc{color:var(--btc)} .lamp{color:var(--lamp)} .muted{color:var(--muted)} .dim{color:var(--dim)}
+:focus-visible{outline:2px dashed var(--lamp);outline-offset:3px}
+button,input,select{font:inherit;color:inherit}
+.btn{display:inline-flex;align-items:center;gap:8px;background:var(--btc);color:#1A0F05;border:0;border-radius:4px;padding:11px 18px;font-family:var(--pix);font-weight:700;font-size:16px;cursor:pointer;text-decoration:none;box-shadow:0 4px 0 #A85E08;white-space:nowrap}
+.btn:hover{filter:brightness(1.08)}
+.btn:active{transform:translateY(3px);box-shadow:0 1px 0 #A85E08}
+.btn.ghost{background:var(--panel);color:var(--fg);box-shadow:0 4px 0 #0E0A07;border:1px solid var(--line)}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:6px;min-width:0}
+.chip{display:inline-flex;align-items:center;gap:6px;font-size:11px;letter-spacing:.06em;text-transform:uppercase;border:1px solid var(--line);border-radius:3px;padding:3px 8px;color:var(--muted)}
+.chip.pv{color:var(--lamp);border-color:rgba(255,226,122,.35)}
+
+header{position:sticky;top:env(safe-area-inset-top,0px);z-index:40;background:rgba(23,18,14,.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+header .wrap{display:flex;align-items:center;justify-content:space-between;gap:16px;height:62px}
+.brand{display:flex;align-items:center;gap:10px;font-family:var(--pix);font-weight:700;font-size:21px;color:var(--fg);text-decoration:none}
+.brand svg{width:30px;height:28px}
+nav{display:flex;gap:20px;align-items:center;font-size:12px;letter-spacing:.06em;text-transform:uppercase}
+nav a{color:var(--muted);text-decoration:none} nav a:hover{color:var(--lamp)}
+@media (max-width:900px){nav a:not(.btn){display:none}}
+@media (max-width:600px){#walletTop{display:none}}
+
+.hero{text-align:center;padding-block:40px 10px}
+.hero .kick{display:inline-block;border-top:1px solid var(--line);padding-top:8px}
+.hero h1{font-size:clamp(38px,7vw,88px);margin-top:16px;letter-spacing:.01em}
+.hero h1 .l2{display:block;color:var(--muted)}
+.hero h1 .l3{display:block;color:var(--muted)}
+.hero h1 .l3 b{color:var(--btc)}
+.stage{display:grid;grid-template-columns:1fr minmax(0,700px) 1fr;gap:20px;align-items:center;margin-top:30px}
+@media (max-width:1040px){.stage{grid-template-columns:1fr}.side{display:none}}
+.side{display:grid;gap:8px;text-align:left;font-size:13.5px}
+.side.r{text-align:right}
+.side p{margin:0;color:var(--muted)}
+.frame{background:#0E0A07;border:6px solid #3A2E25;border-radius:8px;box-shadow:0 0 0 2px #0E0A07,0 20px 40px rgba(0,0,0,.5)}
+.mine{position:relative;aspect-ratio:7/5;max-width:100%}
+.mine canvas{display:block;width:100%;height:100%;image-rendering:pixelated;cursor:crosshair}
+.mine .hud{position:absolute;inset:8px 10px auto 10px;display:flex;justify-content:space-between;pointer-events:none;font-size:11px;letter-spacing:.06em;text-transform:uppercase}
+.mine .foot{position:absolute;inset:auto 10px 8px 10px;display:flex;justify-content:space-between;pointer-events:none;font-size:11px;letter-spacing:.06em;text-transform:uppercase}
+.tip{position:absolute;pointer-events:none;background:rgba(14,10,7,.95);border:1px solid var(--btc);padding:7px 10px;font-size:12px;line-height:1.4;border-radius:3px;white-space:nowrap}
+.cap{text-align:center;margin-top:10px}
+
+.tiles{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:34px}
+@media (max-width:820px){.tiles{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.tile{padding:14px 16px;display:grid;gap:4px}
+.tile strong{font-family:var(--pix);font-size:28px;font-weight:700;line-height:1.1;font-variant-numeric:tabular-nums}
+.tile span.s{font-size:12px;color:var(--dim)}
+.pv-bar{margin-top:14px;padding:12px 16px;display:flex;flex-wrap:wrap;gap:12px;justify-content:space-between;align-items:center;border-left:3px solid var(--lamp)}
+.pv-bar p{margin:0;color:var(--muted);font-size:13.5px;max-width:60em}
+
+.ticker{margin-top:40px;border-block:1px solid var(--line);background:#120E0B;overflow:hidden;white-space:nowrap;padding-block:10px;font-family:var(--pix);font-size:18px}
+.ticker div{display:inline-block;animation:slide 40s linear infinite}
+.ticker span{margin:0 22px} .ticker b{color:var(--btc);font-weight:700}
+@keyframes slide{to{transform:translateX(-50%)}}
+
+section{padding-block:96px 0}
+.shead{display:grid;gap:12px;margin-bottom:28px;max-width:760px}
+.shead h2{font-size:clamp(32px,4.4vw,52px)}
+.shead p{margin:0;color:var(--muted)}
+
+.crew{display:grid;grid-template-columns:minmax(0,340px) minmax(0,1fr);gap:16px}
+@media (max-width:900px){.crew{grid-template-columns:1fr}}
+.cform{padding:18px;display:grid;gap:14px;align-content:start}
+label.lab{display:block;margin-bottom:6px}
+.inp{display:flex;align-items:center;border:1px solid var(--line);border-radius:4px;background:#120E0B}
+.inp input{flex:1;min-width:0;background:transparent;border:0;padding:10px 12px;font-size:17px;color:var(--fg);font-variant-numeric:tabular-nums}
+.inp input:focus{outline:none}
+.inp span{padding:0 12px;color:var(--dim);font-size:12px}
+.inp:focus-within{border-color:var(--btc)}
+.presets{display:flex;flex-wrap:wrap;gap:6px}
+.presets button{background:transparent;border:1px solid var(--line);border-radius:3px;color:var(--muted);padding:4px 9px;font-size:12px;cursor:pointer}
+.presets button:hover{border-color:var(--btc);color:var(--fg)}
+.wmsg{font-size:13px;color:var(--muted);line-height:1.5}
+.wmsg b{color:var(--fg);font-weight:600}
+.wmsg a{color:var(--btc)}
+.btn.on{border-color:var(--ok);color:var(--ok)}
+.cview{padding:18px;display:grid;grid-template-columns:minmax(0,1fr);gap:14px}
+.ctop{display:flex;flex-wrap:wrap;justify-content:space-between;gap:10px;align-items:baseline}
+.ctop h3{font-size:30px}
+.tunnel{background:#0E0A07;border:1px solid var(--line);border-radius:4px;aspect-ratio:5/1.4;max-width:100%}
+.tunnel canvas{display:block;width:100%;height:100%;image-rendering:pixelated}
+.cstats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+@media (max-width:640px){.cstats{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.cstats div{border:1px solid var(--line);border-radius:4px;padding:9px 11px;display:grid;gap:2px}
+.cstats strong{font-family:var(--pix);font-size:20px;font-variant-numeric:tabular-nums}
+.next{font-size:13px;color:var(--muted)}
+.meter{height:12px;border:1px solid var(--line);border-radius:2px;background:#120E0B;overflow:hidden;margin-top:6px}
+.meter i{display:block;height:100%;background:repeating-linear-gradient(90deg,var(--btc) 0 6px,#C86F0B 6px 8px);transition:width .4s}
+
+.how{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
+@media (max-width:900px){.how{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:520px){.how{grid-template-columns:1fr}}
+.how .card{padding:18px;display:grid;gap:8px;align-content:start}
+.how .n{font-family:var(--pix);font-size:28px;color:var(--btc)}
+.how h3{font-size:21px}
+.how p{margin:0;color:var(--muted);font-size:14px}
+
+.tiers{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:10px;align-items:end}
+@media (max-width:1000px){.tiers{grid-template-columns:repeat(4,minmax(0,1fr))}}
+@media (max-width:560px){.tiers{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.tier{padding:12px;display:grid;gap:6px;text-align:center}
+.tier canvas{width:100%;height:auto;image-rendering:pixelated}
+.tier b{font-family:var(--pix);font-size:16px;color:var(--lamp)}
+.tier span{font-size:12px;color:var(--muted)}
+
+.calc{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px}
+@media (max-width:860px){.calc{grid-template-columns:1fr}}
+.calc .in{padding:18px;display:grid;gap:14px;align-content:start}
+.calc .outp{padding:18px;display:grid;gap:10px;align-content:start}
+.row{display:flex;justify-content:space-between;gap:12px;border-bottom:1px dashed var(--line);padding-bottom:8px;font-size:14px}
+.row b{font-family:var(--pix);font-weight:700;font-size:20px;text-align:right;font-variant-numeric:tabular-nums}
+.row.big b{font-size:28px;color:var(--btc)}
+.math{font-size:12.5px;color:var(--dim);margin:6px 0 0}
+
+.tbl{overflow-x:auto}
+table{width:100%;border-collapse:collapse;min-width:720px;font-size:14px}
+th{text-align:left;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--dim);font-weight:500;padding:10px 12px;border-bottom:1px solid var(--line)}
+td{padding:9px 12px;border-bottom:1px dashed var(--line);font-variant-numeric:tabular-nums}
+td .bar{display:inline-block;height:8px;background:var(--btc);vertical-align:middle;border-radius:1px}
+.trans{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px}
+@media (max-width:820px){.trans{grid-template-columns:1fr}}
+.trans .card{padding:18px}
+.trans ul{list-style:none;margin:10px 0 0;padding:0;display:grid;gap:10px;font-size:14px}
+.trans li{display:grid;grid-template-columns:20px 1fr;gap:8px;color:var(--muted)}
+.trans li b{color:var(--fg);font-weight:600}
+.token{padding:26px;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:18px;align-items:center}
+@media (max-width:760px){.token{grid-template-columns:1fr}}
+.token h2{font-size:clamp(30px,4vw,46px)}
+.token .ca{display:flex;align-items:center;gap:10px;border:1px dashed var(--line);border-radius:4px;padding:10px 12px;margin-top:12px;color:var(--muted);font-size:13px}
+footer{margin-top:96px;border-top:1px solid var(--line)}
+footer .wrap{padding-block:28px;display:flex;flex-wrap:wrap;gap:16px;justify-content:space-between;align-items:center;color:var(--dim);font-size:13px}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+
+<header>
+  <div class="wrap">
+    <a class="brand" href="#top" aria-label="Diggits home"><svg class="sprite" data-f="0" viewBox="0 0 12 10" aria-hidden="true"></svg>DIGGITS</a>
+    <nav>
+      <a href="#mine">Mine</a><a href="#crew">My crew</a><a href="#how">How</a><a href="#tiers">Tiers</a><a href="#calc">Calculator</a>
+      <button class="btn ghost" type="button" id="walletTop" style="font-size:14px;padding:7px 12px;box-shadow:none">■ Connect wallet</button>
+      <a class="btn" href="#crew" style="font-size:14px;padding:8px 14px">Find my crew</a>
+    </nav>
+  </div>
+</header>
+
+<main id="top">
+  <div class="wrap" id="mine">
+    <div class="hero">
+      <div class="kick lab">Holders digging for bitcoin</div>
+      <h1>Hold $DIGIT.<span class="l2">Hire more Diggits.</span><span class="l3">They dig the <b>BTC</b>.</span></h1>
+      <div class="stage">
+        <div class="side"><div class="lamp">[ THE MINE ]</div><p>Every holder gets a crew of Diggits.</p><p>More $DIGIT = more Diggits swinging.</p></div>
+        <div>
+          <div class="frame"><div class="mine" id="mineBox">
+            <canvas id="mineCv" aria-label="Cross-section of a mine. Each crew of little miner bots belongs to one holder; bigger crews hold more $DIGIT."></canvas>
+            <div class="hud"><span class="lamp">DIGGITS / MINE</span></div>
+            <div class="foot"><span id="mineFoot">— crews · — diggits</span><span class="btc" id="mineSats">0 sats dug (demo)</span></div>
+            <div class="tip" id="tip" hidden></div>
+          </div></div>
+          <div class="cap lab">Fig. 001 — the mine, one crew per holder · demo crews · hover a crew</div>
+        </div>
+        <div class="side r"><div class="lamp">diggits ⇄ sats</div><p>Bigger crew, bigger share.</p><p>What the mine digs is split by crew size.</p></div>
+      </div>
+      <div class="tiles">
+        <div class="card tile"><span class="lab">BTC vault</span><strong class="btc">0.00000</strong><span class="s">not launched</span></div>
+        <div class="card tile"><span class="lab">Diggits in the mine</span><strong id="tDig">—</strong><span class="s">demo crews shown</span></div>
+        <div class="card tile"><span class="lab">Biggest crew</span><strong id="tBig">—</strong><span class="s" id="tBigS">—</span></div>
+        <div class="card tile"><span class="lab">Your crew</span><strong id="tYou">—</strong><span class="s">try a holding below</span></div>
+      </div>
+      <div class="card pv-bar"><p>The crews shown are demo holders until $DIGIT launches. Then every crew is a real holder, read live from Solana, and the BTC vault shows its real balance.</p><a class="btn ghost" href="#crew" style="font-size:14px;padding:8px 14px">See my crew</a></div>
+    </div>
+  </div>
+
+  <div class="ticker" aria-hidden="true"><div id="tick"></div></div>
+
+  <section id="crew">
+    <div class="wrap">
+      <div class="shead"><span class="lab">My crew</span><h2>Your $DIGIT,<br>in Diggits.</h2><p>Connect your wallet to see your real crew, or type a holding to try one. Connecting is read-only: nothing to sign, nothing moves.</p></div>
+      <div class="crew">
+        <div class="card cform">
+          <div><label class="lab" for="hold">$DIGIT you hold</label><div class="inp"><input id="hold" type="text" inputmode="numeric" value="5,000,000"><span>$DIGIT</span></div></div>
+          <div class="presets" id="presets"><button type="button" data-v="250000">250K</button><button type="button" data-v="1000000">1M</button><button type="button" data-v="5000000">5M</button><button type="button" data-v="12000000">12M</button><button type="button" data-v="20000000">20M</button></div>
+          <p class="muted" style="margin:0;font-size:13.5px">1 Diggit per 250,000 $DIGIT, up to 80. Your share of what's dug follows your exact balance, not the rounded crew.</p>
+          <button class="btn ghost" type="button" id="walletBtn">■ Connect wallet</button>
+          <div class="wmsg" id="walletMsg" aria-live="polite">Phantom, Solflare and Backpack supported.</div>
+          <div><label class="lab" for="lookAddr">Or look up any wallet</label><div class="inp"><input id="lookAddr" type="text" placeholder="Solana address" spellcheck="false" autocomplete="off" style="font-size:13px"><button type="button" id="lookBtn" class="btn ghost" style="box-shadow:none;border:0;padding:8px 12px;font-size:13px">Look up</button></div></div>
+          <div id="testMintBox"><label class="lab" for="testMint">Token to read <span class="dim">· for testing until $DIGIT launches</span></label><div class="inp"><input id="testMint" type="text" placeholder="paste any token mint address" spellcheck="false" autocomplete="off" style="font-size:13px"></div></div>
+        </div>
+        <div class="card cview">
+          <div class="ctop"><h3 id="cName">—</h3><span class="chip" id="cTier">—</span></div>
+          <div class="tunnel"><canvas id="crewCv" aria-label="Your crew of Diggits digging"></canvas></div>
+          <div class="cstats">
+            <div><span class="lab">Diggits</span><strong id="cBots">—</strong></div>
+            <div><span class="lab">Mine share</span><strong id="cShare">—</strong></div>
+            <div><span class="lab">Est. sats / day</span><strong class="btc" id="cSats">—</strong></div>
+            <div><span class="lab">Dug while watching</span><strong class="lamp" id="cLive">0</strong></div>
+          </div>
+          <div class="next" id="cNext">—</div><div class="meter"><i id="cMeter" style="width:0"></i></div>
+          <p class="dim" style="margin:0;font-size:12.5px">Sats estimates use the calculator's inputs below. Hypothetical, not a promise.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="how">
+    <div class="wrap">
+      <div class="shead"><span class="lab">How it works</span><h2>Hold. Hire. Dig. Split.</h2><p>A holder mine on Solana where your crew size is your stake.</p></div>
+      <div class="how">
+        <div class="card"><span class="n">01</span><h3>Get $DIGIT</h3><p>Buy $DIGIT at launch. Holding is all it takes. No staking contract, no lockups.</p></div>
+        <div class="card"><span class="n">02</span><h3>Your crew clocks in</h3><p>One Diggit for every 250,000 $DIGIT you hold, up to 80, read straight from the chain.</p></div>
+        <div class="card"><span class="n">03</span><h3>Fees buy hashrate</h3><p>Creator fees from $DIGIT trading rent Bitcoin hashrate. Whatever it mines lands in a public BTC vault.</p></div>
+        <div class="card"><span class="n">04</span><h3>Split by crew</h3><p>The vault is shared with holders in proportion to their $DIGIT. Bigger crew, bigger slice.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="tiers">
+    <div class="wrap">
+      <div class="shead"><span class="lab">Crew tiers</span><h2>From prospector<br>to motherlode.</h2><p>A tier is just a name for your crew size. Your share always follows your exact $DIGIT balance.</p></div>
+      <div class="tiers" id="tierGrid"></div>
+    </div>
+  </section>
+
+  <section id="calc">
+    <div class="wrap">
+      <div class="shead"><span class="lab">Dig calculator</span><h2>What could your crew dig?</h2><p>Plug in a holding, a trading volume and today's BTC price. The math is right there, so nothing's hidden.</p></div>
+      <div class="calc">
+        <div class="card in">
+          <div><label class="lab" for="kHold">$DIGIT you hold</label><div class="inp"><input id="kHold" type="text" inputmode="numeric" value="5,000,000"><span>$DIGIT</span></div></div>
+          <div><label class="lab" for="kVol">Daily trading volume</label><div class="inp"><input id="kVol" type="text" inputmode="numeric" value="250,000"><span>USD / day</span></div></div>
+          <div><label class="lab" for="kFee">Creator fee rate</label><div class="inp"><input id="kFee" type="text" inputmode="decimal" value="0.05"><span>% of volume</span></div></div>
+          <div><label class="lab" for="kEff">Hashrate efficiency</label><div class="inp"><input id="kEff" type="text" inputmode="decimal" value="90"><span>% of fees returned as BTC</span></div></div>
+          <div><label class="lab" for="kBtc">BTC price</label><div class="inp"><input id="kBtc" type="text" inputmode="numeric" value="100,000"><span>USD · enter today's</span></div></div>
+        </div>
+        <div class="card outp">
+          <div class="row"><span>Your crew</span><b id="oCrew">—</b></div>
+          <div class="row"><span>Your mine share</span><b id="oShare">—</b></div>
+          <div class="row"><span>BTC dug for holders / day</span><b id="oPool">—</b></div>
+          <div class="row big"><span>Your est. sats / day</span><b id="oDay">—</b></div>
+          <div class="row"><span>Your est. BTC / 30 days</span><b id="o30">—</b></div>
+          <div class="row"><span>≈ USD / 30 days</span><b id="oUsd">—</b></div>
+          <p class="math" id="oMath">—</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="board">
+    <div class="wrap">
+      <div class="shead"><span class="lab">Deepest crews</span><h2>The biggest crews underground.</h2><p>Demo data. Real holders appear here at launch.</p></div>
+      <div class="card tbl"><table><thead><tr><th>#</th><th>Crew</th><th>Tier</th><th>Diggits</th><th>$DIGIT</th><th>Crew size</th><th>Share</th></tr></thead><tbody id="boardBody"></tbody></table></div>
+    </div>
+  </section>
+
+  <section id="trust">
+    <div class="wrap">
+      <div class="shead"><span class="lab">Transparency</span><h2>What's on-chain, what's estimated.</h2></div>
+      <div class="trans">
+        <div class="card"><b class="lamp">Read live at launch</b><ul>
+          <li><span class="btc">✓</span><span><b>$DIGIT balances</b> from the token mint, via Solana RPC</span></li>
+          <li><span class="btc">✓</span><span><b>Crews</b> from the largest token accounts, grouped by owner</span></li>
+          <li><span class="btc">✓</span><span><b>BTC vault</b> balance of the public vault wallet, set at launch</span></li>
+          <li><span class="btc">✓</span><span><b>Hashrate receipts</b> linked for every rental the fees pay for</span></li></ul></div>
+        <div class="card"><b class="lamp">Estimates and rules</b><ul>
+          <li><span class="dim">≈</span><span><b>Mine share</b> = your balance ÷ eligible supply (supply minus excluded wallets)</span></li>
+          <li><span class="dim">≈</span><span><b>Calculator</b> uses the volume, fee rate, efficiency and BTC price you type in</span></li>
+          <li><span class="dim">≈</span><span><b>Mining output</b> varies with network difficulty and luck</span></li>
+          <li><span class="dim">≈</span><span><b>Payouts</b> are sent from the vault on a schedule posted on X. This site never moves funds.</span></li></ul></div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap">
+      <div class="card token">
+        <div><span class="lab">$DIGIT</span><h2>The token that hires the crew.</h2><p class="muted" style="margin:10px 0 0">Hold it to grow your crew and your share of the BTC vault.</p>
+          <div class="ca"><span>Contract address drops on our X at launch</span></div></div>
+        <div style="display:grid;gap:10px"><button class="btn" type="button" disabled style="opacity:.55;cursor:not-allowed">Buy $DIGIT · soon</button><a class="btn ghost" href="#calc">Run the numbers</a></div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <a class="brand" href="#top"><svg class="sprite" data-f="1" viewBox="0 0 12 10" aria-hidden="true"></svg>DIGGITS</a>
+    <span>$DIGIT is not launched. The mine shows demo crews, and every BTC figure is a hypothetical estimate, not a promise. Mining output varies. Not financial advice.</span>
+  </div>
+</footer>
+
+<script>
+(() => {
+const $=id=>document.getElementById(id);
+const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+const fmt=n=>Math.round(n).toLocaleString('en-US');
+const short=n=>n>=1e6?(n/1e6).toFixed(n>=1e7?1:2).replace(/\.0+$/,'')+'M':n>=1e3?(n/1e3).toFixed(0)+'K':String(n);
+const num=s=>Number(String(s).replace(/[^0-9.]/g,''))||0;
+const PER=250000, CAP=80, SUPPLY=620e6;
+
+/* ---------- sprite ---------- */
+const FR=[
+ ["....HHHH....","...HHHHHHL..","...FFFFFF...","...FEFFEF...","...FFFFFF...","....BBBB.M..","...BBBBBBP..","...BBBBB.P..","....BBBB.P..","....K..K...."],
+ ["....HHHH....","...HHHHHHL..","...FFFFFF...","...FEFFEF...","...FFFFFF...","....BBBB....","...BBBBBBPPM","...BBBBB...M","....BBBB....","....K..K...."]];
+const PAL={H:'#F7931A',L:'#FFE27A',F:'#2B2320',E:'#8FF0FF',B:'#C9C2B8',P:'#8B5A2B',M:'#E6E6E6',K:'#5A4A40'};
+function drawBot(g,x,y,px,f,flip){ const fr=FR[f]; for(let r=0;r<10;r++) for(let c=0;c<12;c++){ const ch=fr[r][c]; if(ch==='.') continue; g.fillStyle=PAL[ch]; const cc=flip?11-c:c; g.fillRect(Math.round(x+cc*px),Math.round(y+r*px),Math.ceil(px),Math.ceil(px)); } }
+document.querySelectorAll('svg.sprite').forEach(s=>{ const fr=FR[+s.dataset.f]; let h=''; fr.forEach((row,r)=>[...row].forEach((ch,c)=>{ if(ch!=='.') h+=`<rect x="${c}" y="${r}" width="1.02" height="1.02" fill="${PAL[ch]}"/>`; })); s.innerHTML=h; s.setAttribute('shape-rendering','crispEdges'); });
+
+/* ---------- tiers ---------- */
+const TIERS=[['Prospector',1,2],['Dig crew',3,5],['Shaft team',6,11],['Tunnel gang',12,24],['Quarry',25,39],['Deep mine',40,59],['Motherlode',60,80]];
+const tierOf=b=>(TIERS.find(t=>b>=t[1]&&b<=t[2])||['No crew',0,0])[0];
+function miniCrew(cv,n){ const W=120,H=60; cv.width=W; cv.height=H; const g=cv.getContext('2d'); g.fillStyle='#0E0A07'; g.fillRect(0,0,W,H); g.fillStyle='#2A211A'; g.fillRect(0,H-8,W,8);
+  const show=Math.min(n,10), px=n>=25?2:3; const cols=Math.min(show,px===2?8:5); for(let i=0;i<show;i++){ const cx=i%cols, cy=Math.floor(i/cols); drawBot(g,6+cx*(12*px+1),H-8-(cy+1)*(10*px+1),px,i%2,false); }
+  if(n>show){ g.fillStyle='#F7931A'; g.font='bold 10px monospace'; g.fillText('+'+(n-show),W-26,12); } }
+$('tierGrid').innerHTML=TIERS.map(([n,a,b])=>`<div class="card tier"><canvas data-n="${b}"></canvas><b>${n}</b><span>${a===b?a:a+'–'+b} Diggits</span><span class="dim">${short(a*PER)}+ $DIGIT</span></div>`).join('');
+document.querySelectorAll('#tierGrid canvas').forEach(c=>miniCrew(c,+c.dataset.n));
+
+/* ---------- demo crews ---------- */
+const BAL=[24.6e6,23.9e6,15.2e6,9.0e6,7.5e6,7.3e6,3.6e6,3.4e6,3.3e6,3.2e6,3.1e6,3.0e6,2.9e6,2.7e6,2.0e6,1.9e6,1.7e6,1.3e6,1.2e6,.8e6];
+const CREWS=BAL.map((b,i)=>({id:'demo-'+String(i+1).padStart(2,'0'),bal:b,bots:Math.min(CAP,Math.floor(b/PER))}));
+const totalBots=CREWS.reduce((s,c)=>s+c.bots,0);
+$('mineFoot').textContent=`${CREWS.length} crews · ${totalBots} diggits`; $('tDig').textContent=totalBots; $('tBig').textContent=CREWS[0].bots+' bots'; $('tBigS').textContent=CREWS[0].id+' · '+tierOf(CREWS[0].bots).toLowerCase();
+$('boardBody').innerHTML=CREWS.map((c,i)=>`<tr><td>${i+1}</td><td>${c.id}</td><td>${tierOf(c.bots)}</td><td>${c.bots}</td><td>${short(c.bal)}</td><td><span class="bar" style="width:${c.bots/CAP*120}px"></span></td><td>${(c.bal/SUPPLY*100).toFixed(3)}%</td></tr>`).join('');
+const items=['<b>$DIGIT</b> 1 diggit / 250K','fees → hashrate → <b>BTC vault</b>','hold = crew size','crew size = share','the mine never sleeps','dig it'];
+$('tick').innerHTML=[...items,...items,...items,...items].map(t=>`<span>${t}</span><span class="dim">◆</span>`).join('');
+
+/* ---------- mine canvas ---------- */
+const cv=$('mineCv'), g=cv.getContext('2d'); const MW=420, MH=300; cv.width=MW; cv.height=MH; g.imageSmoothingEnabled=false;
+const LEVELS=[86,134,182,230,278]; // floor y of each tunnel
+// lay crews into tunnels left→right
+const slots=[]; { let lv=0,x=10; CREWS.forEach(c=>{ const shown=Math.min(c.bots,6), w=shown*16+12; if(x+w>372){ lv++; x=10; } if(lv>4) return; slots.push({c,lv,x,w,shown}); x+=w+6; }); }
+const rocks=Array.from({length:420},(_,i)=>{ const r=Math.sin(i*91.7)*43758.5; const f=r-Math.floor(r); const r2=Math.sin(i*13.1)*43758.5; return [Math.floor(f*MW),Math.floor((r2-Math.floor(r2))*MH),(i%5)]; });
+const nuggets=[]; let sats=0, frame=0, hover=null;
+function drawMine(){
+  g.fillStyle='#211A15'; g.fillRect(0,0,MW,MH);
+  // sky strip + surface
+  g.fillStyle='#120E0B'; g.fillRect(0,0,MW,34); g.fillStyle='#3B2A1D'; g.fillRect(0,34,MW,3);
+  g.fillStyle='#5A4636'; for(let x=0;x<MW;x+=9) g.fillRect(x,32,4,2);
+  // headframe
+  g.fillStyle='#7C6B5C'; g.fillRect(380,12,2,22); g.fillRect(396,12,2,22); g.fillRect(380,12,18,2); g.fillRect(386,8,6,4); g.fillStyle='#F7931A'; g.fillRect(387,4,4,4);
+  rocks.forEach(([x,y,k])=>{ if(y<38) return; g.fillStyle=k===0?'#2E241D':k===1?'#1A1410':'#272019'; g.fillRect(x,y,2,1); });
+  // shaft
+  g.fillStyle='#0E0A07'; g.fillRect(384,34,10,MH-34); g.fillStyle='#3A2E25'; for(let y=36;y<MH;y+=6) g.fillRect(384,y,10,1);
+  // tunnels
+  LEVELS.forEach(fy=>{ g.fillStyle='#0E0A07'; g.fillRect(4,fy-32,380,32); g.fillStyle='#3B2A1D'; g.fillRect(4,fy,380,2); g.fillStyle='#5A4636'; for(let x=6;x<384;x+=62){ g.fillRect(x,fy-32,2,32); g.fillRect(x-4,fy-32,10,2); }
+    g.fillStyle='rgba(255,226,122,.07)'; for(let x=37;x<384;x+=62) g.fillRect(x-14,fy-32,28,32); });
+  // crews
+  slots.forEach(s=>{ const fy=LEVELS[s.lv]; const hl=hover===s;
+    if(hl){ g.fillStyle='rgba(247,147,26,.18)'; g.fillRect(s.x-4,fy-31,s.w,31); }
+    for(let i=0;i<s.shown;i++){ const f=reduce?0:((Math.floor(frame/8)+i+s.x)%2); drawBot(g,s.x+i*16,fy-15,1.5,f,false); }
+    // rock face being dug
+    g.fillStyle='#4A3A2E'; g.fillRect(s.x+s.shown*16+2,fy-18,4,18);
+    g.fillStyle='#F7931A'; g.font='bold 9px monospace'; g.fillText('×'+s.c.bots,s.x,fy-21);
+  });
+  // nuggets
+  for(let i=nuggets.length-1;i>=0;i--){ const n=nuggets[i]; n.y-=.45; n.a-=.012; if(n.a<=0){ nuggets.splice(i,1); continue; } g.globalAlpha=n.a; g.fillStyle='#F7931A'; g.fillRect(n.x,n.y,4,4); g.fillStyle='#FFE27A'; g.fillRect(n.x+1,n.y+1,1,1); g.globalAlpha=1; }
+}
+function loop(){ frame++;
+  if(!reduce && frame%6===0 && slots.length){ const s=slots[Math.floor(Math.random()*slots.length)]; const w=s.c.bots; if(Math.random()<.4+w/160){ nuggets.push({x:s.x+s.shown*16,y:LEVELS[s.lv]-16,a:1}); sats+=Math.max(1,Math.round(w/4)); $('mineSats').textContent=fmt(sats)+' sats dug (demo)'; } }
+  drawMine(); if(!reduce) requestAnimationFrame(loop); }
+drawMine(); if(!reduce) requestAnimationFrame(loop);
+cv.addEventListener('mousemove',e=>{ const r=cv.getBoundingClientRect(), x=(e.clientX-r.left)/r.width*MW, y=(e.clientY-r.top)/r.height*MH;
+  hover=slots.find(s=>x>=s.x-4&&x<=s.x+s.w-4&&y>=LEVELS[s.lv]-32&&y<=LEVELS[s.lv])||null;
+  const t=$('tip'); if(hover){ t.hidden=false; t.innerHTML=`<b class="lamp">${hover.c.id}</b> · ${tierOf(hover.c.bots)}<br>${hover.c.bots} Diggits · ${short(hover.c.bal)} $DIGIT<br><span class="btc">${(hover.c.bal/SUPPLY*100).toFixed(3)}% of the mine</span>`;
+    const bx=e.clientX-r.left, by=e.clientY-r.top; t.style.left=Math.min(r.width-190,bx+12)+'px'; t.style.top=Math.max(4,by-62)+'px'; } else t.hidden=true; if(reduce) drawMine(); });
+cv.addEventListener('mouseleave',()=>{ hover=null; $('tip').hidden=true; if(reduce) drawMine(); });
+
+/* ---------- calculator ---------- */
+function calc(){
+  const hold=num($('kHold').value), vol=num($('kVol').value), fee=num($('kFee').value)/100, eff=num($('kEff').value)/100, price=Math.max(1,num($('kBtc').value));
+  const bots=Math.min(CAP,Math.floor(hold/PER)), share=Math.min(1,hold/SUPPLY);
+  const poolUsd=vol*fee*eff, poolBtc=poolUsd/price, mine=poolBtc*share;
+  $('oCrew').textContent=bots?`${tierOf(bots)} · ${bots}`:'No crew yet';
+  $('oShare').textContent=(share*100).toFixed(3)+'%';
+  $('oPool').textContent=poolBtc.toFixed(6)+' ₿';
+  $('oDay').textContent=fmt(mine*1e8)+' sats';
+  $('o30').textContent=(mine*30).toFixed(6)+' ₿';
+  $('oUsd').textContent='$'+(mine*30*price).toFixed(2);
+  $('oMath').textContent=`BTC to holders/day = ${fmt(vol)} USD × ${(fee*100).toFixed(3)}% fee × ${(eff*100).toFixed(0)}% efficiency ÷ ${fmt(price)} USD/BTC. Your share = your $DIGIT ÷ ${short(SUPPLY)} eligible supply (preview). Hypothetical math, not a promise. Real volume, hashrate output and payouts vary.`;
+  return {mine};
+}
+['kHold','kVol','kFee','kEff','kBtc'].forEach(id=>$(id).addEventListener('input',()=>{ calc(); if(id==='kHold'){ $('hold').value=$('kHold').value; crew(); } else crew(); }));
+
+/* ---------- my crew ---------- */
+const ccv=$('crewCv'), cg=ccv.getContext('2d'); const CW=250, CH=70; ccv.width=CW; ccv.height=CH; cg.imageSmoothingEnabled=false;
+let myBots=0, live=0, lastT=performance.now();
+function crew(){
+  const hold=num($('hold').value), bots=Math.min(CAP,Math.floor(hold/PER)); myBots=bots;
+  $('kHold').value=$('hold').value; const {mine}=calc();
+  $('cName').textContent=bots?`${bots} Diggit${bots>1?'s':''}`:'No crew yet'; $('cTier').textContent=tierOf(bots);
+  $('cBots').textContent=bots; $('cShare').textContent=(Math.min(1,hold/SUPPLY)*100).toFixed(3)+'%'; $('cSats').textContent=fmt(mine*1e8);
+  $('tYou').textContent=bots?bots+' bots':'—';
+  if(bots>=CAP){ $('cNext').textContent='Max crew: 80 Diggits. Your share still grows with every $DIGIT.'; $('cMeter').style.width='100%'; }
+  else { const need=(bots+1)*PER-hold; $('cNext').textContent=`${fmt(need)} more $DIGIT hires Diggit #${bots+1}.`; $('cMeter').style.width=((hold%PER)/PER*100)+'%'; }
+  live=0; $('cLive').textContent='0';
+}
+let cf=0;
+function drawCrew(t){
+  cf++; cg.fillStyle='#0E0A07'; cg.fillRect(0,0,CW,CH); cg.fillStyle='#2A211A'; cg.fillRect(0,CH-6,CW,6); cg.fillStyle='#4A3A2E'; cg.fillRect(CW-8,10,8,CH-16);
+  cg.fillStyle='rgba(255,226,122,.07)'; cg.fillRect(0,0,CW,CH-6);
+  const n=myBots; if(!n){ cg.fillStyle='#7C6B5C'; cg.font='9px monospace'; cg.fillText('hold 250K+ $DIGIT to hire your first Diggit',18,CH/2); }
+  const per=n>40?20:n>16?16:n>8?10:8, px=n>40?1:n>16?1.3:n>8?1.8:2.4, rows=Math.ceil(Math.min(n,per*3)/per);
+  for(let i=0;i<Math.min(n,per*3);i++){ const r=Math.floor(i/per), c=i%per; const f=reduce?0:((Math.floor(cf/9)+i)%2); drawBot(cg,6+c*(12*px+.5),CH-6-(rows-r)*(10*px+1),px,f,false); }
+  if(n>per*3){ cg.fillStyle='#F7931A'; cg.font='bold 9px monospace'; cg.fillText('+'+(n-per*3)+' more',CW-60,10); }
+  const dt=(t-lastT)/1000; lastT=t; const {mine}=calcCache(); live+=mine*1e8/86400*dt; $('cLive').textContent=live<1?live.toFixed(3):live.toFixed(2);
+  if(!reduce) requestAnimationFrame(drawCrew);
+}
+let cc=null, ccAt=0; function calcCache(){ const now=performance.now(); if(!cc||now-ccAt>500){ cc=calc(); ccAt=now; } return cc; }
+$('hold').addEventListener('input',crew);
+$('presets').addEventListener('click',e=>{ const b=e.target.closest('button'); if(!b) return; $('hold').value=fmt(+b.dataset.v); crew(); });
+crew(); drawCrew(performance.now());
+
+/* Minimal Solana read helpers: base58, PDA (associated token account) derivation, balance reads. No dependencies. */
+const SOL = (() => {
+  const ALPH = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
+  function b58decode(s){ let n=0n; for(const c of s){ const i=ALPH.indexOf(c); if(i<0) throw new Error('bad base58'); n=n*58n+BigInt(i); }
+    const out=[]; while(n>0n){ out.push(Number(n&255n)); n>>=8n; } for(const c of s){ if(c==='1') out.push(0); else break; } return Uint8Array.from(out.reverse()); }
+  function b58encode(b){ let n=0n; for(const x of b) n=(n<<8n)+BigInt(x); let s=''; while(n>0n){ s=ALPH[Number(n%58n)]+s; n/=58n; } for(const x of b){ if(x===0) s='1'+s; else break; } return s; }
+  // ed25519 on-curve check
+  const P=2n**255n-19n, D=(-121665n*modinv(121666n))%P;
+  function mod(a){ const r=a%P; return r<0n?r+P:r; }
+  function pow(b,e){ let r=1n; b=mod(b); while(e>0n){ if(e&1n) r=r*b%P; b=b*b%P; e>>=1n; } return r; }
+  function modinv(a){ return pow(a,P-2n); }
+  function onCurve(bytes){
+    let y=0n; for(let i=31;i>=0;i--) y=(y<<8n)+BigInt(i===31?bytes[i]&0x7f:bytes[i]);
+    if(y>=P) return false;
+    const y2=y*y%P, u=mod(y2-1n), v=mod(D*y2+1n);
+    if(v===0n) return u===0n;
+    const x2=u*modinv(v)%P;
+    if(x2===0n) return true;
+    return pow(x2,(P-1n)/2n)===1n; // x² must be a quadratic residue
+  }
+  async function sha256(parts){ let len=0; parts.forEach(p=>len+=p.length); const buf=new Uint8Array(len); let o=0; parts.forEach(p=>{ buf.set(p,o); o+=p.length; }); return new Uint8Array(await crypto.subtle.digest('SHA-256',buf)); }
+  const enc=new TextEncoder();
+  async function findPDA(seeds,programId){
+    const prog=b58decode(programId);
+    for(let bump=255;bump>=0;bump--){
+      const h=await sha256([...seeds,Uint8Array.of(bump),prog,enc.encode('ProgramDerivedAddress')]);
+      if(!onCurve(h)) return b58encode(h);
+    }
+    throw new Error('no PDA');
+  }
+  const ATA_PROGRAM='ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL';
+  const TOKEN='TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA', TOKEN22='TokenzQdBNbLqP5VEhdkAS6EPFLC1PEnkCK8TZ4RLqT';
+  const ata=(owner,mint,tokenProgram)=>findPDA([b58decode(owner),b58decode(tokenProgram),b58decode(mint)],ATA_PROGRAM);
+  async function rpc(urls,method,params){
+    let last;
+    for(const u of urls){ try{ const r=await fetch(u,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({jsonrpc:'2.0',id:1,method,params})});
+      const j=await r.json(); if(j.error) throw new Error(j.error.message); return j.result; }catch(e){ last=e; } }
+    throw last||new Error('no RPC');
+  }
+  async function solBalance(urls,owner){ const r=await rpc(urls,'getBalance',[owner,{commitment:'confirmed'}]); return r.value/1e9; }
+  // token balance via the owner's associated token accounts (classic + Token-2022), no indexed calls needed
+  async function tokenBalance(urls,owner,mint){
+    const addrs=[await ata(owner,mint,TOKEN), await ata(owner,mint,TOKEN22)];
+    const r=await rpc(urls,'getMultipleAccounts',[addrs,{encoding:'jsonParsed',commitment:'confirmed'}]);
+    let total=0, found=false;
+    for(const acc of r.value){ const info=acc?.data?.parsed?.info; if(info&&info.mint===mint){ found=true; total+=Number(info.tokenAmount.uiAmountString||info.tokenAmount.uiAmount||0); } }
+    return {total,found,addrs};
+  }
+  const isAddress=s=>{ try{ return b58decode(s).length===32; }catch(e){ return false; } };
+  return {b58decode,b58encode,onCurve,findPDA,ata,rpc,solBalance,tokenBalance,isAddress,TOKEN,TOKEN22};
+})();
+
+
+/* ---------- wallet (read-only) ---------- */
+// At launch: paste the $DIGIT mint into DIGIT_MINT. RPCS are tried in order; put your own (Helius/QuickNode) first for heavy traffic.
+const CONFIG={DIGIT_MINT:'', RPCS:['https://solana-rpc.publicnode.com','https://api.mainnet-beta.solana.com']};
+let wallet=null, provider=null;
+const shortKey=k=>k.slice(0,4)+'…'+k.slice(-4);
+const mintToRead=()=>CONFIG.DIGIT_MINT||$('testMint').value.trim();
+if(CONFIG.DIGIT_MINT) $('testMintBox').hidden=true;
+function findProvider(){ const w=window; return w.phantom?.solana || w.solflare || w.backpack?.solana || w.backpack || w.solana || null; }
+function setWalletUI(){ const on=!!wallet; ['walletBtn','walletTop'].forEach(id=>{ const b=$(id); b.textContent=on?(id==='walletTop'?'■ '+shortKey(wallet):'■ '+shortKey(wallet)+' · disconnect'):'■ Connect wallet'; b.title=on?'Disconnect wallet':''; b.classList.toggle('on',on); }); }
+async function readAddress(addr,label){
+  const msg=$('walletMsg'); const mint=mintToRead();
+  msg.innerHTML=`<b>${label}:</b> <span>${shortKey(addr)}</span><br>Reading balances…`;
+  let sol=null, tok=null, err='';
+  try{ sol=await SOL.solBalance(CONFIG.RPCS,addr); }catch(e){ err='Could not reach Solana from this page.'+(location.hostname.endsWith('claude.ai')||location.hostname.includes('claudeusercontent')?' The Claude preview blocks outside connections; it works on your hosted site.':' Try again in a moment.'); }
+  if(sol!==null && mint){
+    if(!SOL.isAddress(mint)){ err='That token address isn\'t a valid Solana address.'; }
+    else { try{ tok=await SOL.tokenBalance(CONFIG.RPCS,addr,mint); if(tok.found){ $('hold').value=fmt(tok.total); crew(); } }catch(e){ err='Could not read the token balance: '+e.message; } }
+  }
+  const tname=CONFIG.DIGIT_MINT?'$DIGIT':'tokens';
+  msg.innerHTML=`<b>${label}:</b> ${shortKey(addr)}`+(sol!==null?` · ${sol.toFixed(3)} SOL`:'')+
+    (tok? (tok.found?`<br><b>${tok.total.toLocaleString('en-US',{maximumFractionDigits:2})} ${tname}</b> → your crew is shown on the right.`:`<br>No ${tname} in this wallet yet. Try a holding above to see a crew.`)
+        : (sol!==null&&!mint?'<br>Paste a token address below to read its balance, or set DIGIT_MINT at launch.':''))+
+    (err?`<br><span class="dim">${err}</span>`:'');
+}
+async function toggleWallet(){
+  const msg=$('walletMsg');
+  if(wallet){ try{ await provider?.disconnect?.(); }catch(e){} wallet=null; setWalletUI(); msg.textContent='Disconnected.'; return; }
+  provider=findProvider();
+  if(!provider){
+    const url=encodeURIComponent(location.href.split('#')[0]);
+    const why= location.protocol==='file:' ? 'Wallets can\'t connect to a file opened straight from your computer. Open the hosted site (for example your GitHub Pages link) instead.'
+      : window.top!==window ? 'Your wallet extension can\'t reach this embedded preview. Open the hosted site in its own tab to connect.'
+      : 'No Solana wallet found in this browser.';
+    msg.innerHTML=`${why} Install <a href="https://phantom.app/download" target="_blank" rel="noopener">Phantom</a> or <a href="https://solflare.com/download" target="_blank" rel="noopener">Solflare</a>, or on your phone <a href="https://phantom.app/ul/browse/${url}?ref=${url}" target="_blank" rel="noopener">open this page in Phantom</a>. You can also look up any address below.`;
+    $('crew').scrollIntoView({behavior:reduce?'auto':'smooth',block:'start'}); return;
+  }
+  msg.textContent='Approve the connection in your wallet…';
+  try{ const res=await provider.connect(); const pk=(res&&res.publicKey)||provider.publicKey; if(!pk) throw new Error('wallet returned no address'); wallet=pk.toString(); setWalletUI();
+    provider.on?.('accountChanged',pk2=>{ if(pk2){ wallet=pk2.toString(); setWalletUI(); readAddress(wallet,'Connected'); } else { wallet=null; setWalletUI(); } });
+    $('crew').scrollIntoView({behavior:reduce?'auto':'smooth',block:'start'});
+    await readAddress(wallet,'Connected');
+  }catch(e){ msg.textContent=(e&&(e.code===4001||/reject|cancel/i.test(e.message)))?'Connection cancelled in your wallet.':'Could not connect: '+(e&&e.message||'unknown error'); }
+}
+$('walletBtn').addEventListener('click',toggleWallet);
+$('walletTop').addEventListener('click',toggleWallet);
+$('lookBtn').addEventListener('click',()=>{ const a=$('lookAddr').value.trim(); if(!SOL.isAddress(a)){ $('walletMsg').textContent='That doesn\'t look like a Solana address.'; return; } readAddress(a,'Wallet'); });
+$('lookAddr').addEventListener('keydown',e=>{ if(e.key==='Enter') $('lookBtn').click(); });
+$('testMint').addEventListener('change',()=>{ const a=wallet||($('lookAddr').value.trim()); if(a&&SOL.isAddress(a)) readAddress(a,wallet?'Connected':'Wallet'); });
+(()=>{ const p=findProvider(); if(!p?.connect) return; Promise.resolve(p.connect({onlyIfTrusted:true})).then(res=>{ const pk=(res&&res.publicKey)||p.publicKey; if(pk){ provider=p; wallet=pk.toString(); setWalletUI(); readAddress(wallet,'Connected'); } }).catch(()=>{}); })();
+
+})();
+</script>
+
+</body>
+</html>
